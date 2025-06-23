@@ -154,9 +154,6 @@ public class NotamDb {
 						+ "classification varchar(4), locationDesignator varchar(12), notamAccountability varchar(12), "
 						+ "notamText text, aixmNotamMessage clob, status varchar(12))";
 
-				// Log the actual SQL statement
-				logger.info("Executing H2 SQL: " + createQuery);
-
 				conn.prepareStatement(createQuery).execute();
 
 				// final String CreateDesignatorIndex = "CREATE INDEX index_locationDesignator ON NOTAMS (locationDesignator)";
@@ -168,9 +165,6 @@ public class NotamDb {
 						+ "updatedTimestamp timestamp, validFromTimestamp timestamp, validToTimestamp timestamp, "
 						+ "classification varchar(4), locationDesignator varchar(12), notamAccountability varchar(12), "
 						+ "notamText text, aixmNotamMessage xml, status varchar(12))";
-
-				// Log the actual SQL statement
-				logger.info("Executing Postgres SQL: " + createQuery);
 
 				conn.prepareStatement(createQuery).execute();
 
