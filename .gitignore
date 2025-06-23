@@ -10,3 +10,15 @@
 *.project
 *.factorypath
 *.log
+src/main/resources/FIL_RSA_KEY
+src/main/resources/fnsClient.conf
+src/main/resources/fnsClient.conf
+
+# IntelliJ IDEA
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/usage.statistics.xml
+.idea/sshConfigs.xml
+*.iml

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/aixm-5.1" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/jms-client" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/swim-utilities" vcs="Git" />
+  </component>
+</project>

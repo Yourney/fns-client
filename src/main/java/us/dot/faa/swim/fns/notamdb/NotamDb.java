@@ -3,14 +3,7 @@ package us.dot.faa.swim.fns.notamdb;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -107,7 +100,7 @@ public class NotamDb {
 		try {
 			conn = getDBConnection();
 			PreparedStatement getLastCorrelationIdPreparedStatement = conn.prepareStatement(
-					"SELECT storedTimeStamp, correlationid FROM NOTAMS ORDER BY correlationid DESC LIMIT 1");
+					"SELECT storedTimeStamp, correlationid FROM " + this.config.table + " ORDER BY correlationid DESC LIMIT 1");
 			ResultSet rs = getLastCorrelationIdPreparedStatement.executeQuery();
 			if (rs.next()) {
 				return new AbstractMap.SimpleEntry<Long, Instant>(rs.getLong("correlationid"),
@@ -160,17 +153,25 @@ public class NotamDb {
 						+ "updatedTimestamp timestamp, validFromTimestamp timestamp, validToTimestamp timestamp, "
 						+ "classification varchar(4), locationDesignator varchar(12), notamAccountability varchar(12), "
 						+ "notamText text, aixmNotamMessage clob, status varchar(12))";
+
+				// Log the actual SQL statement
+				logger.info("Executing H2 SQL: " + createQuery);
+
 				conn.prepareStatement(createQuery).execute();
 
 				// final String CreateDesignatorIndex = "CREATE INDEX index_locationDesignator ON NOTAMS (locationDesignator)";
 				// conn.prepareStatement(CreateDesignatorIndex).execute();
 
 			} else if (this.config.connectionUrl.startsWith("jdbc:postgresql")) {
-				final String createQuery = "CREATE TABLE " + this.config.table + "(fnsid int primary key, "
+				final String createQuery = "CREATE TABLE IF NOT EXISTS " + this.config.table + "(fnsid int primary key, "
 						+ "correlationId bigint, issuedTimestamp timestamp, storedTimeStamp timestamp, "
 						+ "updatedTimestamp timestamp, validFromTimestamp timestamp, validToTimestamp timestamp, "
 						+ "classification varchar(4), locationDesignator varchar(12), notamAccountability varchar(12), "
 						+ "notamText text, aixmNotamMessage xml, status varchar(12))";
+
+				// Log the actual SQL statement
+				logger.info("Executing Postgres SQL: " + createQuery);
+
 				conn.prepareStatement(createQuery).execute();
 
 				// final String createDesignatorIndex = "CREATE INDEX index_locationDesignator ON " + this.config.table
@@ -368,7 +369,7 @@ public class NotamDb {
 					+ fnsMessage.getUpdatedTimestamp().toString());
 
 			checkIfNotamIsNewerPreparedStatement = conn
-					.prepareStatement("SELECT updatedtimestamp FROM NOTAMS WHERE fnsid=" + fnsMessage.getFNS_ID());
+					.prepareStatement("SELECT updatedtimestamp FROM " + this.config.table + " WHERE fnsid=" + fnsMessage.getFNS_ID());
 
 			ResultSet rset = checkIfNotamIsNewerPreparedStatement.executeQuery();
 
@@ -397,10 +398,10 @@ public class NotamDb {
 		PreparedStatement putMessagePreparedStatement;
 		try {
 			putMessagePreparedStatement = conn.prepareStatement(
-					"DELETE FROM NOTAMS WHERE validtotimestamp AT TIME ZONE 'UTC' < NOW()");
+					"DELETE FROM " + this.config.table + " WHERE validtotimestamp AT TIME ZONE 'UTC' < NOW()");
 			int recordsDeleted = putMessagePreparedStatement.executeUpdate();
 
-			putMessagePreparedStatement = conn.prepareStatement("DELETE FROM NOTAMS WHERE status != 'ACTIVE'");
+			putMessagePreparedStatement = conn.prepareStatement("DELETE FROM " + this.config.table + " WHERE status != 'ACTIVE'");
 			recordsDeleted = recordsDeleted + putMessagePreparedStatement.executeUpdate();
 
 			putMessagePreparedStatement.close();
@@ -416,8 +417,15 @@ public class NotamDb {
 		}
 	}
 
-	public Connection getDBConnection() throws SQLException {
-		return notamDbDataSource.getConnection();
+	private Connection getDBConnection() throws SQLException {
+		Connection conn = notamDbDataSource.getConnection();
+
+		if (this.config.getSchema() != null && !this.config.getSchema().isEmpty()) {
+			try (Statement stmt = conn.createStatement()) {
+				stmt.execute("SET search_path TO " + this.config.getSchema());
+			}
+		}
+		return conn;  // <--- Don't forget this!
 	}
 
 	// db lookups
